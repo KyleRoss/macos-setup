@@ -1,18 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #####################################################################
 # Set various system settings for MacOS                             #
 #####################################################################
 
-source _utils.sh
+source $SCRIPTS_DIR/_utils.sh
+
+e_message "Setting System Preferences"
 
 # close any open System Settings panes
 killall "System Settings" 2> /dev/null
-
-# ask for the administrator password upfront
-sudo -v
-
-# keep-alive: update existing `sudo` time stamp until script has finished
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 e_pending "Setting basic system preferences"
 
@@ -52,6 +48,7 @@ sudo defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo Hos
 defaults write com.apple.BluetoothAudioAgent "Apple Bitpool Min (editable)" -int "40"
 
 ### KEYBOARD/MOUSE ##################################################
+e_pending "Setting keyboard/mouse preferences"
 
 # disable automatic capitalization as it’s annoying when typing code
 defaults write NSGlobalDomain "NSAutomaticCapitalizationEnabled" -bool false
@@ -85,12 +82,10 @@ defaults write NSGlobalDomain "AppleMetricUnits" -bool false
 defaults write -g com.apple.mouse.scaling -float 7.0
 
 ### POWER MANAGEMENT ################################################
+e_pending "Setting power management preferences"
 
 # Enable lid wakeup
 sudo pmset -a lidwake 1
-
-# Restart automatically if the computer freezes
-sudo systemsetup -setrestartfreeze on
 
 # Sleep the display after 30 minutes while charging
 sudo pmset -c displaysleep 30
@@ -107,20 +102,11 @@ sudo pmset -b sleep 30
 # Set standby delay to 24 hours (default is 1 hour)
 sudo pmset -a standbydelay 86400
 
-# Never go into computer sleep mode
-sudo systemsetup -setcomputersleep Off > /dev/null
-
 # hibernation mode
 sudo pmset -a hibernatemode 0
 
-# remove the sleep image file to save disk space
-sudo rm -f /private/var/vm/sleepimage
-# create a zero-byte file instead…
-sudo touch /private/var/vm/sleepimage
-# …and make sure it can’t be rewritten
-sudo chflags uchg /private/var/vm/sleepimage
-
 ### SCREEN ##########################################################
+e_pending "Setting screen preferences"
 
 # save screenshots to the desktop
 defaults write com.apple.screencapture "location" -string "${HOME}/Desktop"
@@ -135,6 +121,7 @@ defaults write NSGlobalDomain "AppleFontSmoothing" -int "1"
 sudo defaults write /Library/Preferences/com.apple.windowserver "DisplayResolutionEnabled" -bool true
 
 ### FINDER ##########################################################
+e_pending "Setting finder preferences"
 
 # allow quitting via ⌘ + Q; doing so will also hide desktop icons
 defaults write com.apple.finder "QuitMenuItem" -bool true
@@ -239,6 +226,7 @@ defaults write com.apple.finder "FXInfoPanesExpanded" -dict \
 	Privileges -bool true
 
 ### DOCK AND DASHBOARD ##############################################
+e_pending "Setting dock preferences"
 
 # enable highlight hover effect for the grid view of a stack (Dock)
 defaults write com.apple.dock "mouse-over-hilite-stack" -bool true
@@ -265,6 +253,7 @@ defaults write com.apple.dock "mru-spaces" -bool false
 defaults write com.apple.dock "show-recents" -bool false
 
 ### SAFARI ##########################################################
+e_pending "Setting safari preferences"
 
 # Privacy: don’t send search queries to Apple
 defaults write com.apple.Safari "UniversalSearchEnabled" -bool false
@@ -326,6 +315,7 @@ defaults write com.apple.Safari "SendDoNotTrackHTTPHeader" -bool true
 defaults write com.apple.Safari "InstallExtensionUpdatesAutomatically" -bool true
 
 ### MAIL ############################################################
+e_pending "Setting mail preferences"
 
 # Copy email addresses as `foo@example.com` instead of `Foo Bar <foo@example.com>` in Mail.app
 defaults write com.apple.mail "AddressesIncludeNameOnPasteboard" -bool false
@@ -339,6 +329,7 @@ defaults write com.apple.mail "DraftsViewerAttributes" -dict-add "SortedDescendi
 defaults write com.apple.mail "DraftsViewerAttributes" -dict-add "SortOrder" -string "received-date"
 
 ### SPOTLIGHT #######################################################
+e_pending "Setting spotlight preferences"
 
 # configure spotlight search results
 defaults write com.apple.Spotlight orderedItems -array ''
@@ -372,6 +363,7 @@ sudo mdutil -i on / > /dev/null
 sudo mdutil -E / > /dev/null
 
 ### TERMINAL ########################################################
+e_pending "Setting terminal/iterm preferences"
 
 # only use UTF-8 in Terminal.app
 defaults write com.apple.terminal "StringEncodings" -array 4
@@ -385,15 +377,39 @@ defaults write com.apple.Terminal "ShowLineMarks" -int "0"
 # don’t display the annoying prompt when quitting iTerm
 defaults write com.googlecode.iterm2 "PromptOnQuit" -bool false
 
+# add profile to iTerm
+mkdir -p ~/Library/Application\ Support/iTerm2/DynamicProfiles
+cp $BASE_DIR/configs/iterm-profile.json ~/Library/Application\ Support/iTerm2/DynamicProfiles/
+defaults write com.googlecode.iterm2 "Default Bookmark Guid" -string "770EF310-C50E-49E6-A00F-4B7FCF5BF56C"
+
+# use minimal theme
+defaults write com.googlecode.iterm2 "TabStyleWithAutomaticOption" -int "5"
+defaults write com.googlecode.iterm2 "HideTab" -int "0"
+defaults write com.googlecode.iterm2 "TabViewType" -int "0"
+defaults write com.googlecode.iterm2 "StretchTabsToFillBar" -int "1"
+defaults write com.googlecode.iterm2 "StatusBarPosition" -int "1"
+defaults write com.googlecode.iterm2 "ShowFullScreenTabBar" -int "1"
+defaults write com.googlecode.iterm2 "UseBorder" -int "0"
+
+### TYPORA ##########################################################
+if has_app "Typora"; then
+	e_pending "Setting typora preferences"
+	defaults write abnerworks.Typora "theme" -string "Github"
+	defaults write abnerworks.Typora "send_usage_info" -bool false
+	defaults write abnerworks.Typora "use_seamless_window" -bool true
+fi
+
 ### TIME MACHINE ####################################################
+e_pending "Setting time machine preferences"
 
 # prevent Time Machine from prompting to use new hard drives as backup volume
 defaults write com.apple.TimeMachine "DoNotOfferNewDisksForBackup" -bool true
 
 # disable local Time Machine backups
-hash tmutil &> /dev/null && sudo tmutil disablelocal
+# hash tmutil &> /dev/null && sudo tmutil disable
 
 ### ACTIVITY MONITOR ################################################
+e_pending "Setting activity monitor preferences"
 
 # show the main window when launching Activity Monitor
 defaults write com.apple.ActivityMonitor "OpenMainWindow" -bool true
@@ -409,6 +425,7 @@ defaults write com.apple.ActivityMonitor "SortColumn" -string "CPUUsage"
 defaults write com.apple.ActivityMonitor "SortDirection" -int "0"
 
 ### TEXTEDIT ########################################################
+e_pending "Setting textedit preferences"
 
 # use plain text mode for new TextEdit documents
 defaults write com.apple.TextEdit "RichText" -int "0"
@@ -418,6 +435,7 @@ defaults write com.apple.TextEdit "PlainTextEncoding" -int "4"
 defaults write com.apple.TextEdit "PlainTextEncodingForWrite" -int "4"
 
 ### APP STORE #######################################################
+e_pending "Setting app store preferences"
 
 # enable the automatic update check
 defaults write com.apple.SoftwareUpdate "AutomaticCheckEnabled" -bool true
@@ -438,16 +456,19 @@ defaults write com.apple.commerce "AutoUpdate" -bool true
 defaults write com.apple.commerce "AutoUpdateRestartRequired" -bool true
 
 ### PHOTOS ##########################################################
+e_pending "Setting photos preferences"
 
 # prevent Photos from opening automatically when devices are plugged in
 defaults -currentHost write com.apple.ImageCapture "disableHotPlug" -bool true
 
 ### MESSAGES ########################################################
+e_pending "Setting messages preferences"
 
 # disable smart quotes as it’s annoying for messages that contain code
 defaults write com.apple.messageshelper.MessageController "SOInputLineSettings" -dict-add "automaticQuoteSubstitutionEnabled" -bool false
 
 ### CHROME ##########################################################
+e_pending "Setting chrome preferences"
 
 # disable the all too sensitive backswipe on trackpads
 defaults write com.google.Chrome "AppleEnableSwipeNavigateWithScrolls" -bool false
@@ -462,6 +483,7 @@ defaults write com.google.Chrome "PMPrintingExpandedStateForPrint2" -bool true
 defaults write com.google.Chrome.canary "PMPrintingExpandedStateForPrint2" -bool true
 
 ### MENU BAR ########################################################
+e_pending "Setting menubar preferences"
 
 # use digital clock
 defaults write com.apple.menuextra.clock "IsAnalog" -bool false
@@ -491,6 +513,7 @@ defaults -currentHost write com.apple.controlcenter.plist "FocusModes" -int "18"
 
 
 ### RESTART APPLICATIONS ############################################
+e_pending "All preferences set, restarting applications"
 
 for app in "Activity Monitor" \
 	"Address Book" \
@@ -506,12 +529,12 @@ for app in "Activity Monitor" \
 	"Safari" \
 	"SystemUIServer" \
   "ControlCenter" \
-	"Terminal" \
 	"iCal"; do
+	e_pending "Restarting ${app}"
 	killall "${app}" &> /dev/null
 done
 
 
 ### DONE ############################################################
 
-e_success "Completed setting macos preferences"
+e_success "Completed setting MacOS preferences"

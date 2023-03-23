@@ -29,9 +29,9 @@ e_message() {
 
 has_command() {
   if [ $(type -P $1) ]; then
-    return 1
+    return 0
   fi
-  return 0
+  return 1
 }
 
 test_command() {
@@ -44,9 +44,9 @@ test_command() {
 
 has_brew() {
   if $(brew ls --versions $1 > /dev/null); then
-    return 1
+    return 0
   fi
-  return 0
+  return 1
 }
 
 test_brew() {
@@ -60,9 +60,9 @@ test_brew() {
 has_path() {
   local path="$@"
   if [ -e "$HOME/$path" ]; then
-    return 1
+    return 0
   fi
-  return 0
+  return 1
 }
 
 test_path() {
@@ -78,9 +78,9 @@ test_path() {
 
 has_cask() {
   if $(brew ls --cask $1 &> /dev/null); then
-    return 1
+    return 0
   fi
-  return 0
+  return 1
 }
 
 test_cask() {
@@ -94,9 +94,9 @@ test_cask() {
 has_app() {
   local name="$@"
   if [ -e "/Applications/$name.app" ]; then
-    return 1
+    return 0
   fi
-  return 0
+  return 1
 }
 
 test_app() {
@@ -109,22 +109,28 @@ test_app() {
 
 is_arm() {
   if [[ $(uname -p) == 'arm' ]]; then
-    return 1
+    return 0
   fi
-  return 0
-}
-
-has_consent() {
-  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    return 1
-  fi
-  return 0
+  return 1
 }
 
 get_consent() {
-  printf "❔  %s? [y/n]:" "$@"
-  read -p " " -n 1
-  printf "\n"
+  read -p "$1 [y/n]: " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    return 0
+  fi
+  return 1
+}
+
+get_input() {
+  read -p "$1: " -r LAST_INPUT
+  echo
+  if [[ -z $LAST_INPUT ]]; then
+    e_failure "You must provide input"
+    get_input "$1"
+  fi
+  return 1
 }
 
 if ! [[ "${OSTYPE}" == "darwin"* ]]; then
